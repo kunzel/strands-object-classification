@@ -7,6 +7,7 @@
 
 #include "ros/ros.h"
 #include "sensor_msgs/PointCloud2.h"
+#include "std_msgs/String.h"
 #include <pcl/common/common.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/console/parse.h>
@@ -19,10 +20,13 @@
 #include <pcl/apps/3d_rec_framework/utils/metrics.h>
 #include <pcl/apps/3d_rec_framework/pipeline/global_nn_classifier.h>
 #include "soc_msg_and_serv/segment_and_classify.h"
+#include "strands_qsr_msgs/ObjectClassification.h"
 #include "segmenter.h"
 #include <pcl/apps/dominant_plane_segmentation.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/lexical_cast.hpp>
+#include <stdlib.h>
+#include <stdio.h>
 
 #define SOC_VISUALIZE
 
@@ -110,6 +114,12 @@ class ShapeClassifier
 
       for(size_t i=0; i < indices.size(); i++)
       {
+        std::cout << "==========" << std::endl;
+        std::cout << "CLUSTER " << i << std::endl;
+        std::cout << "==========" << std::endl;
+
+        strands_qsr_msgs::ObjectClassification oc;
+        response.classification.push_back(oc);
 
 #ifdef SOC_VISUALIZE
         pcl::PointCloud<PointT>::Ptr cluster (new pcl::PointCloud<PointT>);
@@ -154,7 +164,12 @@ class ShapeClassifier
         {
           std_msgs::String ss;
           ss.data = categories[0];
-          response.categories_found.push_back(ss);
+          std::cout << conf[0] << " " << categories[0] << std::endl;
+          
+          std::string cls ("cluster");
+          response.classification[i].object_id = cls.append(boost::lexical_cast<std::string>(i));
+          response.classification[i].type.push_back(categories[0]);
+          response.classification[i].confidence.push_back(conf[0]);
         }
         else if(categories.size() == 0)
         {
@@ -165,29 +180,22 @@ class ShapeClassifier
           //at least 2 categories
           std::vector< std::pair<float, std::string> > conf_categories_map_;
           for (size_t kk = 0; kk < categories.size (); kk++)
-          {
-            conf_categories_map_.push_back(std::make_pair(conf[kk], categories[kk]));
-          }
+            {
+              conf_categories_map_.push_back(std::make_pair(conf[kk], categories[kk]));
+            }
 
           std::sort (conf_categories_map_.begin (), conf_categories_map_.end (),
                      boost::bind (&std::pair<float, std::string>::first, _1) > boost::bind (&std::pair<float, std::string>::first, _2));
-
-          /*for (size_t kk = 0; kk < categories.size (); kk++)
-          {
-            std::cout << conf_categories_map_[kk].first << std::endl;
-          }*/
-
-          if( (conf_categories_map_[1].first / conf_categories_map_[0].first) < 0.85f)
-          {
-
-
-            if (!boost::starts_with(conf_categories_map_[0].second, "unknown"))
+          
+          std::string cls ("cluster");
+          response.classification[i].object_id = cls.append(boost::lexical_cast<std::string>(i));
+          
+          for (size_t kk = 0; kk < categories.size (); kk++)
             {
-              std_msgs::String ss;
-              ss.data = conf_categories_map_[0].second;
-              response.categories_found.push_back(ss);
+              std::cout << conf_categories_map_[kk].first << " " << conf_categories_map_[kk].second << std::endl;
+              response.classification[i].type.push_back(conf_categories_map_[kk].second);
+              response.classification[i].confidence.push_back(conf_categories_map_[kk].first);
             }
-          }
         }
       }
 

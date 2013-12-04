@@ -59,10 +59,15 @@ class SOCDemo
         srv.request.cloud = *msg;
         if (client.call(srv))
         {
-          std::cout << "Found categories:" << static_cast<int>(srv.response.categories_found.size()) << std::endl;
-          for(size_t i=0; i < srv.response.categories_found.size(); i++)
+          std::cout << "Found clusters:" << static_cast<int>(srv.response.classification.size()) << std::endl;
+          for(size_t i=0; i < srv.response.classification.size(); i++)
           {
-            std::cout << "   => " << srv.response.categories_found[i] << std::endl;
+            std::cout << srv.response.classification[i].object_id << std::endl;
+
+            for(size_t j=0; j < srv.response.classification[i].type.size(); j++)
+              {
+                std::cout << "   => " << srv.response.classification[i].type[j] << "(" << srv.response.classification[i].confidence[j] << ")" << std::endl;
+              }
           }
         }
       }

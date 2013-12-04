@@ -1,3 +1,10 @@
 sensor_msgs/PointCloud2 cloud
 ---
-std_msgs/String[] categories_found
+# classification result for cluster
+strands_qsr_msgs/ObjectClassification[] classification
+# local bounding box of the cluster
+strands_qsr_msgs/BBox[] bbox
+# centroid of the cluster
+geometry_msgs/Point32[] centroid
+# point cloud of the cluster 
+sensor_msgs/PointCloud2[] cloud
