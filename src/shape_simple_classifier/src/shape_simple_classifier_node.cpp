@@ -70,7 +70,7 @@ class ShapeClassifier
       std::vector<pcl::PointIndices> indices;
       dps.setDownsamplingSize (0.01f);
       dps.compute_fast (clusters);
-      dps.getIndicesClusters (indices);
+      dps.getIndicesClusters(indices);
       Eigen::Vector4f table_plane;
       dps.getTableCoefficients (table_plane);
 
@@ -137,11 +137,13 @@ class ShapeClassifier
         classifier_->getCategory (categories);
         classifier_->getConfidence (conf);
 
+        Eigen::Vector4f centroid;
+        pcl::compute3DCentroid (*frame, indices[i].indices, centroid);
+
+        
 #ifdef SOC_VISUALIZE
         float text_scale = 0.015f;
         float dist_ = 0.03f;
-        Eigen::Vector4f centroid;
-        pcl::compute3DCentroid (*frame, indices[i].indices, centroid);
         for (size_t kk = 0; kk < categories.size (); kk++)
         {
           pcl::PointXYZ pos;
@@ -157,33 +159,54 @@ class ShapeClassifier
           cluster_text << "cluster_" << i << "_" << kk << "_text";
           text_3d_.push_back(cluster_text.str());
           vis_->addText3D (prob_str.str (), pos, text_scale, 1, 0, 1, cluster_text.str (), 0);
+          
+          /*
+          pcl::PointXYZ pos2;
+          pos2.x = centroid[0];//+ table_plane[0];
+          pos2.y = centroid[1];// + table_plane[1];
+          pos2.z = centroid[2];// + table_plane[2];
+
+          cluster_text << "cluster_" << i << "_" << kk << "_text" << kk;
+          text_3d_.push_back(cluster_text.str());
+          vis_->addText3D ("X", pos2, text_scale, 1, 0, 1, cluster_text.str(), 0);
+          */
         }
 #endif
+        
+        std::cout << "CENTROID: (" << centroid[0] << "," << centroid[1] << "," << centroid[2] << ")" << std::endl;
+        std::cout << "TABLE: (" << table_plane[0] << "," << table_plane[1] << "," << table_plane[2] << "," << table_plane[4] << " )" << std::endl;
+        
+        geometry_msgs::Point32 cent;
+        cent.x = centroid[0];
+        cent.y = centroid[1];
+        cent.z = centroid[2];
+        response.centroid.push_back(cent);
+        
+        Eigen::Vector4f min; 
+        Eigen::Vector4f max;   
+        pcl::getMinMax3D (*frame, indices[i].indices, min, max); 
+        
+        strands_qsr_msgs::BBox bbox;
+        geometry_msgs::Point32 pt;
+        pt.x = min[0]; pt.y = min[1]; pt.z = min[2]; bbox.point.push_back(pt);
+        pt.x = min[0]; pt.y = min[1]; pt.z = max[2]; bbox.point.push_back(pt);
+        pt.x = min[0]; pt.y = max[1]; pt.z = min[2]; bbox.point.push_back(pt);
+        pt.x = min[0]; pt.y = max[1]; pt.z = max[2]; bbox.point.push_back(pt);
+        pt.x = max[0]; pt.y = min[1]; pt.z = min[2]; bbox.point.push_back(pt);
+        pt.x = max[0]; pt.y = min[1]; pt.z = max[2]; bbox.point.push_back(pt);
+        pt.x = max[0]; pt.y = max[1]; pt.z = min[2]; bbox.point.push_back(pt);
+        pt.x = max[0]; pt.y = max[1]; pt.z = max[2]; bbox.point.push_back(pt);
+        response.bbox.push_back(bbox);
 
-        if(categories.size() == 1)
+        if(categories.size() > 0)
         {
-          std_msgs::String ss;
-          ss.data = categories[0];
-          std::cout << conf[0] << " " << categories[0] << std::endl;
-          
-          std::string cls ("cluster");
-          response.classification[i].object_id = cls.append(boost::lexical_cast<std::string>(i));
-          response.classification[i].type.push_back(categories[0]);
-          response.classification[i].confidence.push_back(conf[0]);
-        }
-        else if(categories.size() == 0)
-        {
-          //weird case, do nothing...
-        }
-        else
-        {
-          //at least 2 categories
+          //at least 1 category
           std::vector< std::pair<float, std::string> > conf_categories_map_;
           for (size_t kk = 0; kk < categories.size (); kk++)
             {
               conf_categories_map_.push_back(std::make_pair(conf[kk], categories[kk]));
             }
-
+          
           std::sort (conf_categories_map_.begin (), conf_categories_map_.end (),
                      boost::bind (&std::pair<float, std::string>::first, _1) > boost::bind (&std::pair<float, std::string>::first, _2));
           
