@@ -174,7 +174,7 @@ class ShapeClassifier
 #endif
         
         std::cout << "CENTROID: (" << centroid[0] << "," << centroid[1] << "," << centroid[2] << ")" << std::endl;
-        std::cout << "TABLE: (" << table_plane[0] << "," << table_plane[1] << "," << table_plane[2] << "," << table_plane[4] << " )" << std::endl;
+        std::cout << "TABLE: (" << table_plane[0] << "," << table_plane[1] << "," << table_plane[2] << "," << table_plane[3] << " )" << std::endl;
         
         geometry_msgs::Point32 cent;
         cent.x = centroid[0];
