@@ -221,8 +221,11 @@ class ShapeClassifier
           
           for (size_t kk = 0; kk < categories.size (); kk++)
             {
+              
               std::cout << conf_categories_map_[kk].first << " " << conf_categories_map_[kk].second << std::endl;
-              response.classification[i].type.push_back(conf_categories_map_[kk].second);
+            
+              std::string st = conf_categories_map_[kk].second.substr(0, conf_categories_map_[kk].second.size()-1);
+              response.classification[i].type.push_back(st);
               response.classification[i].confidence.push_back(conf_categories_map_[kk].first);
             }
         }
