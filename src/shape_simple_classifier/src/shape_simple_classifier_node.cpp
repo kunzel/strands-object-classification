@@ -75,6 +75,7 @@ class ShapeClassifier
       dps.getTableCoefficients (table_plane);
 
 #ifdef SOC_VISUALIZE
+      //vis_->spin();
       for(size_t i=0; i < text_3d_.size(); i++)
       {
         vis_->removeText3D(text_3d_[i]);
@@ -90,6 +91,7 @@ class ShapeClassifier
       for(size_t i=0; i < frame->points.size(); i++)
       {
         Eigen::Vector3f xyz_p = frame->points[i].getVector3fMap ();
+
 
         if (!pcl_isfinite (xyz_p[0]) || !pcl_isfinite (xyz_p[1]) || !pcl_isfinite (xyz_p[2]))
           continue;
@@ -137,13 +139,27 @@ class ShapeClassifier
         classifier_->getCategory (categories);
         classifier_->getConfidence (conf);
 
+
         Eigen::Vector4f centroid;
         pcl::compute3DCentroid (*frame, indices[i].indices, centroid);
 
         
 #ifdef SOC_VISUALIZE
+
         float text_scale = 0.015f;
         float dist_ = 0.03f;
+
+        pcl::PointXYZ pos2;
+        pos2.x = centroid[0] + table_plane[0] * static_cast<float> (- 1) * dist_;
+        pos2.y = centroid[1] + table_plane[1] * static_cast<float> (- 1) * dist_;;
+        pos2.z = centroid[2] + table_plane[2] * static_cast<float> (- 1) * dist_;;
+        
+        std::stringstream cluster_text;
+        cluster_text << "cluster_" << i;
+        text_3d_.push_back(cluster_text.str());
+        vis_->addText3D (cluster_text.str(), pos2, text_scale, 1, 0, 1, cluster_text.str(), 0);
+
+
         for (size_t kk = 0; kk < categories.size (); kk++)
         {
           pcl::PointXYZ pos;
@@ -158,18 +174,8 @@ class ShapeClassifier
           std::stringstream cluster_text;
           cluster_text << "cluster_" << i << "_" << kk << "_text";
           text_3d_.push_back(cluster_text.str());
-          vis_->addText3D (prob_str.str (), pos, text_scale, 1, 0, 1, cluster_text.str (), 0);
+          vis_->addText3D (prob_str.str(), pos, text_scale, 1, 0, 1, cluster_text.str (), 0);
           
-          /*
-          pcl::PointXYZ pos2;
-          pos2.x = centroid[0];//+ table_plane[0];
-          pos2.y = centroid[1];// + table_plane[1];
-          pos2.z = centroid[2];// + table_plane[2];
-
-          cluster_text << "cluster_" << i << "_" << kk << "_text" << kk;
-          text_3d_.push_back(cluster_text.str());
-          vis_->addText3D ("X", pos2, text_scale, 1, 0, 1, cluster_text.str(), 0);
-          */
         }
 #endif
         
@@ -210,7 +216,7 @@ class ShapeClassifier
           std::sort (conf_categories_map_.begin (), conf_categories_map_.end (),
                      boost::bind (&std::pair<float, std::string>::first, _1) > boost::bind (&std::pair<float, std::string>::first, _2));
           
-          std::string cls ("cluster");
+          std::string cls ("cluster_");
           response.classification[i].object_id = cls.append(boost::lexical_cast<std::string>(i));
           
           for (size_t kk = 0; kk < categories.size (); kk++)
