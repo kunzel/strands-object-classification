@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 import roslib; roslib.load_manifest('soc_test')
 
+import os
 import getopt
 import sys
 import json
 import rospy
 from soc_msg_and_serv.srv import *
 from sensor_msgs.msg import *
+
+BASELINE_PERCEPTION = 0.05
 
 OBJT_LIST = ['book',
              'bottle',
@@ -29,6 +32,15 @@ OBJT_MAP = {'book' : 'Book',
             'UNKNOWN' : 'UNKNOWN'
             }
 
+def normalize(lst):
+        "Make sure the probabilities of all values sum to 1."
+        total = sum(lst)
+        if not (1.0-epsilon < total < 1.0+epsilon):
+            for i in range(len(lst)):
+                lst[i] /= total
+        return lst
+
+epsilon = 0.001
 
 class SceneRecorder():
     """ Stores perceived scenes and their perception results as json file """
@@ -112,11 +124,16 @@ class SceneRecorder():
             
                 response = sac(request)
 
+                objects = list()
+                types = dict()
+                position = dict()
+                bbox = dict()
+                
                 j = 0
                 while j < len(response.classification):
 
                     c = response.classification[j]
-
+                    
                     print '--- [ SELECT A TYPE ] --- '
                     for i in range(0,len(OBJT_LIST)):
                         print i, OBJT_LIST[i]
@@ -130,13 +147,110 @@ class SceneRecorder():
                             continue
                         continue
 
-                    print "-->", c.object_id, "is a", OBJT_MAP[OBJT_LIST[key]]
+                    obj_key = key
+                    print "-->", c.object_id, "is a", OBJT_MAP[OBJT_LIST[obj_key]]
                     confirm_text = "Confirm ('Enter'); Re-select (any key + 'Enter'). "
                     key = raw_input(confirm_text)
                     if key == "":
+                        types[c.object_id] = OBJT_MAP[OBJT_LIST[obj_key]]
                         j = j + 1
 
+                key = raw_input("Store scene ('Enter'); Discard scene (any key + 'Enter') ")
+                if key != '':
+                    print "Scene was discarded."
+                    continue
+
+                # generate scene description
+                for i in range(len(response.classification)):
+
+                    oid = response.classification[i].object_id
+                    objects.append(oid)
+
+                    pos = [response.centroid[i].x, response.centroid[i].y, response.centroid[i].z]
+                    position[oid] = pos
+
+                    bbox_ = [] 
+                    for p in response.bbox[i].point:
+                        point = [p.x, p.y, p.z]
+                        bbox_.append(point)
+
+                    bbox[oid] = bbox_
+
                 
+                now = rospy.get_rostime()
+                sid = str(now.secs)
+                scene = {'scene_id' :    sid,
+                         'objects' :     objects,
+                         'type' :        types,
+                         'position' :    position,
+                         'bbox':         bbox}
+
+                # generate perception description
+
+                percept = dict()
+
+                for cls in response.classification:
+
+                    objt = list()
+                    conf = list()
+                    for i in range(len(OBJT_LIST) - 1): # exclude class 'UNKNOWN'
+                        t = OBJT_LIST[i]
+                        c = BASELINE_PERCEPTION
+                        if t in cls.type:
+                            ind = cls.type.index(t)
+                            c += cls.confidence[ind]
+
+                        objt.append(OBJT_MAP[t])
+                        conf.append(c)
+                        
+                    data = dict()
+                    data['object_id'] = cls.object_id
+                    data['type'] = objt
+                    data['confidence'] = normalize(conf)
+
+
+                    print data
+                    percept[cls.object_id] = data 
+                
+        
+                # store scenes
+                try:
+                    with open(self.filename + '_scn.json', 'r+') as in_file:
+
+                        try:
+                            scns = json.load(in_file)
+                        except ValueError:
+                            print "VALUE ERROR - file does not contain valid json."
+                            scns = list()
+                except IOError:
+                    print "IO ERROR - could not read from file. create new file."
+                    scns = list()
+                        
+                    
+                with open(self.filename + '_scn.json', 'w') as out_file:
+                    scns.append(scene)
+                    out_file.write(json.dumps(scns, out_file, indent=2))
+
+
+                # store perception
+                try:
+                    with open(self.filename + '_perception.json', 'r+') as in_file:
+
+                        try:
+                            percepts = json.load(in_file)
+                        except ValueError:
+                            print "VALUE ERROR - file does not contain valid json."
+                            percepts = dict()
+                except IOError:
+                    print "IO ERROR - could not read from file. create new file."
+                    percepts = dict()
+                        
+                    
+                with open(self.filename + '_perception.json', 'w') as out_file:
+                    percepts[sid] = percept
+                    
+                    out_file.write(json.dumps(percepts, out_file, indent=2))
+                    
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e
 
@@ -168,7 +282,7 @@ if __name__ == "__main__":
         if ('-h','') in opts or ('--help', '') in opts or len(args) is not 1:
             raise Usage(help_msg())
 
-        sr = SceneRecorder(argv[0])
+        sr = SceneRecorder(argv[1])
         sr.run()
 
 
