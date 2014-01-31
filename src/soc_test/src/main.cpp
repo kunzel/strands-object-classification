@@ -78,7 +78,7 @@ class SOCDemo
     SOCDemo()
     {
       KINECT_OK_ = false;
-      camera_topic_ = "/camera/depth/points";
+      camera_topic_ = "/chest_xtion/depth/points";
       kinect_trials_ = 5;
     }
 

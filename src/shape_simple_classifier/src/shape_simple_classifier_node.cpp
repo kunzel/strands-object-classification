@@ -83,7 +83,7 @@ class ShapeClassifier
       text_3d_.clear();
       vis_->removeAllShapes();
       vis_->removeAllPointClouds();
-      vis_->addPointCloud(frame, "scene_cloud");
+      //vis_->addPointCloud(frame, "scene_cloud");
       vis_->addCoordinateSystem(0.2f);
 
       //show table plane
@@ -108,7 +108,7 @@ class ShapeClassifier
       pcl::copyPointCloud(*frame, plane_indices, *plane);
 
       pcl::visualization::PointCloudColorHandlerCustom<PointT> random_handler (plane, 0, 255, 0);
-      vis_->addPointCloud<PointT> (plane, random_handler, "table plane");
+      //vis_->addPointCloud<PointT> (plane, random_handler, "table plane");
       vis_->spinOnce();
 #endif
 
@@ -155,11 +155,11 @@ class ShapeClassifier
         pos2.z = centroid[2] + table_plane[2] * static_cast<float> (- 1) * dist_;;
         
         std::stringstream cluster_text;
-        cluster_text << "cluster_" << i;
+        cluster_text << "C_" << i;
         text_3d_.push_back(cluster_text.str());
-        vis_->addText3D (cluster_text.str(), pos2, text_scale, 1, 0, 1, cluster_text.str(), 0);
+        vis_->addText3D (cluster_text.str(), pos2, text_scale * 2, 1, 0, 1, cluster_text.str(), 0);
 
-
+        /*
         for (size_t kk = 0; kk < categories.size (); kk++)
         {
           pcl::PointXYZ pos;
@@ -177,6 +177,7 @@ class ShapeClassifier
           vis_->addText3D (prob_str.str(), pos, text_scale, 1, 0, 1, cluster_text.str (), 0);
           
         }
+        */
 #endif
         
         std::cout << "CENTROID: (" << centroid[0] << "," << centroid[1] << "," << centroid[2] << ")" << std::endl;

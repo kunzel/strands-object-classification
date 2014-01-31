@@ -52,7 +52,8 @@ class SceneRecorder():
         self.filename = filename
         
         self.KINECT_OK = False
-        self.camera_topic = "/camera/depth/points"
+        self.camera_topic = "/chest_xtion/depth/points"
+        #self.camera_topic = "/camera/depth/points"
         self.kinect_trials = 5
         self.check_kinect()
 
