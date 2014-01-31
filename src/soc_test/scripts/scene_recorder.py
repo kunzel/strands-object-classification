@@ -109,6 +109,7 @@ class SceneRecorder():
                 r.sleep()
 
 
+
             rospy.loginfo("Got pointcloud!")
             # call classification service with pointcloud
             service_name = 'segment_and_classify'
@@ -127,6 +128,7 @@ class SceneRecorder():
                 objects = list()
                 types = dict()
                 position = dict()
+                orientation = dict()
                 bbox = dict()
                 
                 j = 0
@@ -169,6 +171,9 @@ class SceneRecorder():
                     pos = [response.centroid[i].x, response.centroid[i].y, response.centroid[i].z]
                     position[oid] = pos
 
+                    # add default orientation as the current perception does not report any
+                    orientation[oid] = [1.0, 0.0, 0.0, 0.0]
+
                     bbox_ = [] 
                     for p in response.bbox[i].point:
                         point = [p.x, p.y, p.z]
@@ -183,12 +188,14 @@ class SceneRecorder():
                          'objects' :     objects,
                          'type' :        types,
                          'position' :    position,
+                         'orientation' : orientation,
                          'bbox':         bbox}
 
                 # generate perception description
 
                 percept = dict()
 
+                                      
                 for cls in response.classification:
 
                     objt = list()
@@ -209,7 +216,7 @@ class SceneRecorder():
                     data['confidence'] = normalize(conf)
 
 
-                    print data
+                    #print data
                     percept[cls.object_id] = data 
                 
         
@@ -243,7 +250,21 @@ class SceneRecorder():
                             percepts = dict()
                 except IOError:
                     print "IO ERROR - could not read from file. create new file."
+                    meta = dict()
+
+                    objects = list()
+                    for i in range(len(OBJT_LIST) - 1): # exclude class 'UNKNOWN'
+                            objects.append(OBJT_MAP[OBJT_LIST[i]])
+
+                    now = rospy.get_rostime()
+                    meta['objects'] = objects
+                    meta['perception_type'] = 'TUWs 3D object class recognition'
+                    meta['random_seed'] = now.secs
+                    meta['scene_file'] = self.filename + '_scn.json'
+                    meta['stamp'] = now.secs
+
                     percepts = dict()
+                    percepts['_meta'] = meta
                         
                     
                 with open(self.filename + '_perception.json', 'w') as out_file:
