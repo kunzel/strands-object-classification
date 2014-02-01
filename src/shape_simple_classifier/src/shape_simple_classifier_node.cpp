@@ -123,13 +123,22 @@ class ShapeClassifier
         strands_qsr_msgs::ObjectClassification oc;
         response.classification.push_back(oc);
 
-#ifdef SOC_VISUALIZE
+
         pcl::PointCloud<PointT>::Ptr cluster (new pcl::PointCloud<PointT>);
         pcl::copyPointCloud(*frame, indices[i], *cluster);
+
+        sensor_msgs::PointCloud2  pc2;
+        pcl::toROSMsg (*cluster, pc2);
+        response.cloud.push_back(pc2);
+
+#ifdef SOC_VISUALIZE
         std::stringstream cluster_name;
         cluster_name << "cluster_" << i;
         pcl::visualization::PointCloudColorHandlerRandom<PointT> random_handler (cluster);
         vis_->addPointCloud<PointT> (cluster, random_handler, cluster_name.str ());
+        
+
+
 #endif
         classifier_->setIndices(indices[i].indices);
         classifier_->classify ();
