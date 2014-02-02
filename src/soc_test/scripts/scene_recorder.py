@@ -13,22 +13,24 @@ BASELINE_PERCEPTION = 0.05
 
 OBJT_LIST = ['book',
              'bottle',
-             'cellphone',
+             #'cellphone',
              'keyboard',
              'monitor',
              'mouse',
              'mug',
              'notebook',
+             'telephone',
              'UNKNOWN']
 
 OBJT_MAP = {'book' : 'Book',        
             'bottle' : 'Bottle',
-            'cellphone' : 'Mobile',
+            #'cellphone' : 'Mobile',
             'keyboard' : 'Keyboard',
             'monitor' : 'Monitor',
             'mouse' : 'Mouse',
             'mug' :  'Mug',
             'notebook' : 'Laptop',
+            'telephone' : 'Telephone',
             'UNKNOWN' : 'UNKNOWN'
             }
 
