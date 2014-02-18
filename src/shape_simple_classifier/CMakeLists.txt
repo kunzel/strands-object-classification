@@ -4,7 +4,7 @@ project(shape_simple_classifier)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp sensor_msgs std_msgs strands_qsr_msgs soc_msg_and_serv)
+find_package(catkin REQUIRED COMPONENTS roscpp sensor_msgs std_msgs strands_qsr_msgs soc_msg_and_serv tf)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
